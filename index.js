@@ -518,10 +518,6 @@ DB.prototype._update = function (cb) {
 }
 
 DB.prototype._createFeed = function (key, dir) {
-  if (!dir) {
-    dir = key.toString('hex')
-    dir = 'peers/' + dir.slice(0, 2) + '/' + dir.slice(2)
-  }
 
   if (key) {
     if (this.local && this.local.key && this.local.key.equals(key)) return this.local
@@ -579,6 +575,11 @@ DB.prototype._createWriter = function (key, dir) {
   for (var i = 0; i < this._writers.length; i++) {
     var w = this._writers[i]
     if (key && w.key.equals(key)) return w
+  }
+
+  if (!dir) {
+    dir = key.toString('hex')
+    dir = 'peers/' + dir.slice(0, 2) + '/' + dir.slice(2)
   }
 
   var res = writer(this, this._createFeed(key, dir), this._writers.length)
