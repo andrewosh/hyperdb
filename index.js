@@ -584,7 +584,7 @@ DB.prototype._createWriter = function (key, dir) {
   var res = writer(this, this._createFeed(key, dir), this._writers.length)
 
   this._writers.push(res)
-  this.emit('_writer', res)
+  this.emit('_writer', res, dir)
 
   return res
 }
