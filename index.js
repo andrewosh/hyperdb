@@ -9,6 +9,9 @@ var codecs = require('codecs')
 var events = require('events')
 var inherits = require('inherits')
 var toBuffer = require('to-buffer')
+var varint = require('varint')
+var Readable = require('stream').Readable
+var once = require('once')
 var protocol = null // lazy load on replicate
 
 module.exports = DB
@@ -33,6 +36,9 @@ function DB (storage, key, opts) {
   this.opened = false
   this.sparse = !!opts.sparse
 
+  this._parent = opts.parent || null
+  this._checkout = opts.checkout || null
+  this._heads = null
   this._codec = opts.valueEncoding ? codecs(opts.valueEncoding) : null
   this._storage = typeof storage === 'string' ? fileStorage : storage
   this._map = opts.map || null
@@ -53,6 +59,7 @@ function DB (storage, key, opts) {
   }
 
   function open (cb) {
+    if (self._parent) return self._openCheckout(cb)
     self._open(cb)
   }
 
@@ -66,6 +73,7 @@ inherits(DB, events.EventEmitter)
 DB.prototype.batch = function (batch, cb) {
   if (!cb) cb = noop
   if (!batch.length) return process.nextTick(cb, null)
+  if (this._parent) return process.nextTick(cb, new Error('Cannot write to a checkout'))
 
   var self = this
   var nodes = []
@@ -104,6 +112,10 @@ DB.prototype.heads = function (cb) {
   function onready (err) {
     if (err) return cb(err)
 
+    if (self._heads) {
+      return cb(null, self._heads)
+    }
+
     for (; i < self._writers.length; i++) {
       missing++
       self._writers[i].head(onhead)
@@ -132,7 +144,48 @@ DB.prototype.heads = function (cb) {
   }
 }
 
+DB.prototype.checkout = function (version, opts) {
+  if (!opts) opts = {}
+  if (typeof version === 'string') version = toBuffer(version, 'hex')
+
+  opts.parent = this
+
+  var ptr = 0
+  var heads = opts.checkout = []
+
+  while (ptr < version.length) {
+    var key = version.slice(ptr, ptr + 32)
+    ptr += 32
+    var seq = varint.decode(version, ptr)
+    ptr += varint.decode.bytes
+    heads.push({key: key, seq: seq})
+  }
+
+  return new DB(this._storage, null, opts)
+}
+
+DB.prototype.version = function (cb) {
+  var self = this
+
+  this.heads(function (err, heads) {
+    if (err) return cb(err)
+
+    var arr = []
+
+    for (var i = 0; i < heads.length; i++) {
+      var h = heads[i]
+      var w = self._writers[h.feed]
+
+      arr.push(w.key)
+      arr.push(toBuffer(varint.encode(h.seq)))
+    }
+
+    cb(null, Buffer.concat(arr))
+  })
+}
+
 DB.prototype.authorize = function (key, cb) {
+  if (this._parent) return process.nextTick(cb || noop, new Error('Cannot write to a checkout'))
   this._createWriter(toBuffer(key, 'hex'))
   this.put('', '', cb)
 }
@@ -246,6 +299,7 @@ DB.prototype._closest = function (key, cb) {
 }
 
 DB.prototype.put = function (key, value, cb) {
+  if (this._parent) return process.nextTick(cb || noop, new Error('Cannot write to a checkout'))
   var self = this
 
   this._lock(function (release) {
@@ -466,6 +520,55 @@ function getBatch (self, w, batch, seq, cb) {
   process.nextTick(cb, null, batch[seq - w.feed.length])
 }
 
+DB.prototype._openCheckout = function (cb) {
+  var self = this
+
+  this._parent.ready(function (err) {
+    if (err) return cb(err)
+    self.source = self._parent.source
+    self.key = self._parent.key
+    self.discoveryKey = self._parent.discoveryKey
+    self.local = self._parent.local
+    self._writers = self._parent._writers
+    self._localWriter = self._parent._localWriter
+
+    var error = null
+    var missing = self._checkout.length
+    var result = []
+    if (!missing) return cb(null)
+
+    for (var i = 0; i < self._checkout.length; i++) {
+      var c = self._checkout[i]
+      var next = onnode(i)
+      var feed = getFeed(c.key)
+      if (!feed) {
+        next(new Error('Invalid version'))
+      } else {
+        feed.get(c.seq, next)
+      }
+    }
+
+    function onnode (i) {
+      return function (err, node) {
+        if (err) error = err
+        else result[i] = node
+        if (--missing) return
+        self._heads = result
+        cb(error)
+      }
+    }
+
+    function getFeed (key) {
+      for (var i = 0; i < self._writers.length; i++) {
+        if (self._writers[i].key.toString('hex') === key.toString('hex')) {
+          return self._writers[i]
+        }
+      }
+      return null
+    }
+  })
+}
+
 DB.prototype._open = function (cb) {
   var self = this
   var source = this._createFeed(this.key, 'source')
@@ -660,7 +763,211 @@ DB.prototype._visitGet = function (key, path, i, node, heads, result, onvisit, c
   }
 }
 
+DB.prototype.createDiffStream = function (key, checkout, head) {
+  if (!checkout) checkout = []  // Diff from the beginning
+
+  var stream = new Readable({objectMode: true})
+  stream._read = noop
+
+  function cb (err) {
+    stream.emit('error', err)
+  }
+
+  var self = this
+  var path = hash(key, true)
+  var missing = 2
+
+  var a = {}
+  var b = {}
+
+  // 1: Walk the trie starting at the head of all logs
+  if (!head) this.heads(onHeads)
+  else snapshotToNodes(head, onHeads)
+
+  function onHeads (err, heads) {
+    if (err) return cb(err)
+    if (!heads.length) {
+      return onDoneFromHead(null, {})
+    }
+
+    missing--
+    var visited = {}
+    for (var i = 0; i < heads.length; i++) {
+      missing++
+      self._visitTrie(key, path, heads[i], {}, checkout, visited, onDoneFromHead)
+    }
+  }
+
+  // 2: Walk the trie starting at CHECKOUT
+  snapshotToNodes(checkout, function (err, nodes) {
+    if (err) return cb(err)
+    if (!nodes.length) {
+      return onDoneFromSnapshot(null, {})
+    }
+    missing--
+    missing += nodes.length
+    var visited = {}
+    for (var i = 0; i < nodes.length; i++) {
+      self._visitTrie(key, path, nodes[i], {}, null, visited, onDoneFromSnapshot)
+    }
+  })
+
+  function snapshotToNodes (snapshot, cb) {
+    cb = once(cb)
+    var result = []
+    var keys = Object.keys(snapshot || {})
+    if (!keys.length) return cb(null, result)
+    var pending = keys.length
+    for (var i = 0; i < keys.length; i++) {
+      var elm = snapshot[i]
+      self._writers[i].get(elm, function (err, node) {
+        if (err) return cb(err)
+        result.push(node)
+        if (!--pending) cb(null, result)
+      })
+    }
+  }
+
+  function onDoneFromHead (err, result) {
+    if (err) return cb(err)
+    merge(a, result)
+    if (!--missing) onAllDone()
+  }
+
+  function onDoneFromSnapshot (err, result) {
+    if (err) return cb(err)
+    merge(b, result)
+    if (!--missing) onAllDone()
+  }
+
+  // Merge b into a
+  function merge (a, b) {
+    Object.keys(b).forEach(function (key) {
+      a[key] = (a[key] || []).concat(b[key])
+    })
+    return a
+  }
+
+  function onAllDone () {
+    a = a || {}
+    b = b || {}
+    var diff = diffNodeSets(a, b)
+    for (var i = 0; i < diff.length; i++) {
+      stream.push(diff[i])
+    }
+    stream.push(null)
+  }
+
+  return stream
+}
+
+DB.prototype.snapshot = function (cb) {
+  this.heads(function (err, heads) {
+    if (err) return cb(err)
+    if (!heads.length) return cb(null, [])
+
+    var result = {}
+    for (var i = 0; i < heads.length; i++) {
+      result[heads[i].feed] = heads[i].seq
+    }
+
+    cb(null, result)
+  })
+}
+
+DB.prototype._visitTrie = function (key, path, node, heads, halt, visited, cb, type) {
+  var self = this
+  var missing = 0
+
+  cb = once(cb)
+
+  var id = node.feed + ',' + node.seq
+  visited[id] = true
+
+  // We've traveled past 'snapshot' -- bail.
+  if (halt && halt[node.feed] !== undefined && halt[node.feed] >= node.seq) {
+    return cb(null, {})
+  }
+
+  // Check if this node matches the desired prefix.
+  var prefixMatch = true
+  for (var i = 0; i < path.length && path[i] !== hash.TERMINATE; i++) {
+    if (path[i] !== node.path[i]) {
+      prefixMatch = false
+      break
+    }
+  }
+
+  // Mark this match as either the first time we've seen it (heads), an older
+  // value of this key we're still tracking backwards in time (snapshot), or a
+  // duplicate that we've already procesed (deduped).
+  if (prefixMatch && !heads[node.key]) {
+    heads[node.key] = heads[node.key] || []
+    heads[node.key].push(node)
+  }
+
+  // Traverse the node's entire trie, recursively, hunting for more nodes with
+  // the desired prefix.
+  for (var k = 0; k < node.trie.length; k++) {
+    var trie = node.trie[k] || []
+    for (i = 0; i < trie.length; i++) {
+      var entrySet = trie[i] || []
+      for (var j = 0; j < entrySet.length; j++) {
+        var entry = entrySet[j]
+
+        id = entry.feed + ',' + entry.seq
+        if (visited[id]) continue
+        visited[id] = true
+
+        missing++
+        self._writers[entry.feed].get(entry.seq, function (err, node) {
+          if (err) return fin(null)
+          self._visitTrie(key, path, node, heads, halt, visited, function (err) {
+            if (err) return fin(err)
+            if (!--missing) fin(null)
+          })
+        })
+      }
+    }
+  }
+
+  if (!missing) fin(null)
+
+  // Finalize the results by taking a diff of 'heads' and 'snapshot'.
+  function fin () {
+    cb(null, heads)
+  }
+}
+
 function noop () {}
+
+function diffNodeSets (a, b) {
+  var ak = Object.keys(a)
+  var result = []
+  for (var i = 0; i < ak.length; i++) {
+    var A = a[ak[i]]
+    var B = b[ak[i]]
+    if (A && B && !entriesEqual(A, B)) {
+      result.push({ type: 'del', name: ak[i], value: B.map(map) })
+      result.push({ type: 'put', name: ak[i], value: A.map(map) })
+    } else if (A && (!B || A === B)) {
+      result.push({ type: 'put', name: ak[i], value: A.map(map) })
+    }
+  }
+  return result
+
+  function map (a) {
+    return a.value
+  }
+
+  function entriesEqual (a, b) {
+    if (a.length !== b.length) return false
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false
+    }
+    return true
+  }
+}
 
 function updateHead (newNode, oldNode, heads) {
   var i = heads.indexOf(oldNode)
