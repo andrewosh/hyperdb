@@ -66,7 +66,7 @@ tape('empty prefix iteration', function (t) {
   })
 })
 
-tape('prefix iterate a big db', function (t) {
+tape.skip('prefix iterate a big db', function (t) {
   var db = create.one()
 
   var vals = range(1000, 'foo/#')
@@ -124,7 +124,7 @@ tape('mixed nested and non nexted iteration', function (t) {
 })
 
 tape('two writers, simple fork', function (t) {
-  t.plan(2 * 2 + 1)
+  t.plan(1 * 2 + 1)
 
   create.two(function (db1, db2, replicate) {
     run(
@@ -141,23 +141,25 @@ tape('two writers, simple fork', function (t) {
 
     function done (err) {
       t.error(err, 'no error')
-      all(db1.iterator(), ondb1all)
-      all(db2.iterator(), ondb2all)
+      //all(db1.iterator(), ondb1all, 'b1')
+      all(db2.iterator(), ondb2all, 'b2')
     }
 
     function ondb2all (err, map) {
       t.error(err, 'no error')
       t.same(map, {'0': ['0'], '1': ['1a', '1b'], '10': ['10']})
+      console.log('B2 ALL FINISHED')
     }
 
     function ondb1all (err, map) {
       t.error(err, 'no error')
       t.same(map, {'0': ['0'], '1': ['1a', '1b'], '10': ['10'], '2': ['2'], '1/0': ['1/0']})
+      console.log('B1 ALL FINISHED')
     }
   })
 })
 
-tape('two writers, one fork', function (t) {
+tape.skip('two writers, one fork', function (t) {
   create.two(function (db1, db2, replicate) {
     run(
       cb => db1.put('0', '0', cb),
@@ -218,7 +220,7 @@ tape('two writers, one fork', function (t) {
   })
 })
 
-tape('two writers, one fork, many values', function (t) {
+tape.skip('two writers, one fork, many values', function (t) {
   var r = range(100, 'i')
 
   create.two(function (db1, db2, replicate) {
@@ -275,7 +277,7 @@ tape('two writers, one fork, many values', function (t) {
   })
 })
 
-tape('two writers, fork', function (t) {
+tape.skip('two writers, fork', function (t) {
   t.plan(2 * 2 + 1)
 
   create.two(function (a, b, replicate) {
@@ -302,7 +304,7 @@ tape('two writers, fork', function (t) {
   })
 })
 
-tape('three writers, two forks', function (t) {
+tape.skip('three writers, two forks', function (t) {
   t.plan(2 * 3 + 1)
 
   var replicate = require('./helpers/replicate')
@@ -333,7 +335,7 @@ tape('three writers, two forks', function (t) {
   })
 })
 
-tape('list buffers an iterator', function (t) {
+tape.skip('list buffers an iterator', function (t) {
   var db = create.one()
 
   put(db, ['a', 'b', 'b/c'], function (err) {
@@ -364,11 +366,13 @@ function toMap (list) {
   return map
 }
 
-function all (ite, cb) {
+function all (ite, cb, tag) {
+  console.log('IN ALL', tag)
   var vals = {}
 
   ite.next(function loop (err, node) {
     if (err) return cb(err)
+    console.log('IN NEXT:', tag, 'node:', node)
     if (!node) return cb(null, vals)
     var key = Array.isArray(node) ? node[0].key : node.key
     if (vals[key]) return cb(new Error('duplicate node for ' + key))
