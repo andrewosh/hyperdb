@@ -124,7 +124,7 @@ tape('mixed nested and non nexted iteration', function (t) {
 })
 
 tape('two writers, simple fork', function (t) {
-  t.plan(1 * 2 + 1)
+  t.plan(2 * 2 + 1)
 
   create.two(function (db1, db2, replicate) {
     run(
