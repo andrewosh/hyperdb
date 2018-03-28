@@ -3,7 +3,7 @@ var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
 
-tape('basic iteration', function (t) {
+tape.skip('basic iteration', function (t) {
   var db = create.one()
   var vals = ['a', 'b', 'c']
   var expected = toMap(vals)
@@ -18,7 +18,7 @@ tape('basic iteration', function (t) {
   })
 })
 
-tape('iterate a big db', function (t) {
+tape.skip('iterate a big db', function (t) {
   var db = create.one()
 
   var vals = range(1000, '#')
@@ -34,7 +34,7 @@ tape('iterate a big db', function (t) {
   })
 })
 
-tape('prefix basic iteration', function (t) {
+tape.skip('prefix basic iteration', function (t) {
   var db = create.one()
   var vals = ['foo/a', 'foo/b', 'foo/c']
   var expected = toMap(vals)
@@ -51,7 +51,7 @@ tape('prefix basic iteration', function (t) {
   })
 })
 
-tape('empty prefix iteration', function (t) {
+tape.skip('empty prefix iteration', function (t) {
   var db = create.one()
   var vals = ['foo/a', 'foo/b', 'foo/c']
   var expected = {}
@@ -84,7 +84,7 @@ tape.skip('prefix iterate a big db', function (t) {
   })
 })
 
-tape('non recursive iteration', function (t) {
+tape.skip('non recursive iteration', function (t) {
   var db = create.one()
 
   var vals = [
@@ -108,7 +108,7 @@ tape('non recursive iteration', function (t) {
   })
 })
 
-tape('mixed nested and non nexted iteration', function (t) {
+tape.skip('mixed nested and non nexted iteration', function (t) {
   var db = create.one()
   var vals = ['a', 'a/a', 'a/b', 'a/c', 'a/a/a', 'a/a/b', 'a/a/c']
   var expected = toMap(vals)
@@ -159,7 +159,7 @@ tape('two writers, simple fork', function (t) {
   })
 })
 
-tape.skip('two writers, one fork', function (t) {
+tape('two writers, one fork', function (t) {
   create.two(function (db1, db2, replicate) {
     run(
       cb => db1.put('0', '0', cb),
@@ -220,7 +220,7 @@ tape.skip('two writers, one fork', function (t) {
   })
 })
 
-tape.skip('two writers, one fork, many values', function (t) {
+tape('two writers, one fork, many values', function (t) {
   var r = range(100, 'i')
 
   create.two(function (db1, db2, replicate) {
@@ -277,7 +277,7 @@ tape.skip('two writers, one fork, many values', function (t) {
   })
 })
 
-tape.skip('two writers, fork', function (t) {
+tape('two writers, fork', function (t) {
   t.plan(2 * 2 + 1)
 
   create.two(function (a, b, replicate) {
