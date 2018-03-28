@@ -141,7 +141,7 @@ tape('two writers, simple fork', function (t) {
 
     function done (err) {
       t.error(err, 'no error')
-      //all(db1.iterator(), ondb1all, 'b1')
+      all(db1.iterator(), ondb1all, 'b1')
       all(db2.iterator(), ondb2all, 'b2')
     }
 
