@@ -335,7 +335,7 @@ tape('three writers, two forks', function (t) {
   })
 })
 
-tape.skip('list buffers an iterator', function (t) {
+tape('list buffers an iterator', function (t) {
   var db = create.one()
 
   put(db, ['a', 'b', 'b/c'], function (err) {
