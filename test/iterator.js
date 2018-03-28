@@ -367,12 +367,10 @@ function toMap (list) {
 }
 
 function all (ite, cb, tag) {
-  console.log('IN ALL', tag)
   var vals = {}
 
   ite.next(function loop (err, node) {
     if (err) return cb(err)
-    console.log('IN NEXT:', tag, 'node:', node)
     if (!node) return cb(null, vals)
     var key = Array.isArray(node) ? node[0].key : node.key
     if (vals[key]) return cb(new Error('duplicate node for ' + key))
