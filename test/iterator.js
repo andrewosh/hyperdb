@@ -3,7 +3,7 @@ var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
 
-tape.skip('basic iteration', function (t) {
+tape('basic iteration', function (t) {
   var db = create.one()
   var vals = ['a', 'b', 'c']
   var expected = toMap(vals)
@@ -18,7 +18,7 @@ tape.skip('basic iteration', function (t) {
   })
 })
 
-tape.skip('iterate a big db', function (t) {
+tape('iterate a big db', function (t) {
   var db = create.one()
 
   var vals = range(1000, '#')
@@ -34,7 +34,7 @@ tape.skip('iterate a big db', function (t) {
   })
 })
 
-tape.skip('prefix basic iteration', function (t) {
+tape('prefix basic iteration', function (t) {
   var db = create.one()
   var vals = ['foo/a', 'foo/b', 'foo/c']
   var expected = toMap(vals)
@@ -51,7 +51,7 @@ tape.skip('prefix basic iteration', function (t) {
   })
 })
 
-tape.skip('empty prefix iteration', function (t) {
+tape('empty prefix iteration', function (t) {
   var db = create.one()
   var vals = ['foo/a', 'foo/b', 'foo/c']
   var expected = {}
@@ -66,7 +66,7 @@ tape.skip('empty prefix iteration', function (t) {
   })
 })
 
-tape.skip('prefix iterate a big db', function (t) {
+tape('prefix iterate a big db', function (t) {
   var db = create.one()
 
   var vals = range(1000, 'foo/#')
@@ -84,7 +84,7 @@ tape.skip('prefix iterate a big db', function (t) {
   })
 })
 
-tape.skip('non recursive iteration', function (t) {
+tape('non recursive iteration', function (t) {
   var db = create.one()
 
   var vals = [
@@ -108,7 +108,7 @@ tape.skip('non recursive iteration', function (t) {
   })
 })
 
-tape.skip('mixed nested and non nexted iteration', function (t) {
+tape('mixed nested and non nexted iteration', function (t) {
   var db = create.one()
   var vals = ['a', 'a/a', 'a/b', 'a/c', 'a/a/a', 'a/a/b', 'a/a/c']
   var expected = toMap(vals)
