@@ -304,7 +304,7 @@ tape('two writers, fork', function (t) {
   })
 })
 
-tape.skip('three writers, two forks', function (t) {
+tape('three writers, two forks', function (t) {
   t.plan(2 * 3 + 1)
 
   var replicate = require('./helpers/replicate')
