@@ -51,7 +51,7 @@ tape('prefix basic iteration', function (t) {
   })
 })
 
-tape.skip('empty prefix iteration', function (t) {
+tape('empty prefix iteration', function (t) {
   var db = create.one()
   var vals = ['foo/a', 'foo/b', 'foo/c']
   var expected = {}
@@ -66,7 +66,7 @@ tape.skip('empty prefix iteration', function (t) {
   })
 })
 
-tape.skip('prefix iterate a big db', function (t) {
+tape('prefix iterate a big db', function (t) {
   var db = create.one()
 
   var vals = range(1000, 'foo/#')
@@ -84,7 +84,7 @@ tape.skip('prefix iterate a big db', function (t) {
   })
 })
 
-tape.skip('non recursive iteration', function (t) {
+tape('non recursive iteration', function (t) {
   var db = create.one()
 
   var vals = [
