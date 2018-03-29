@@ -108,7 +108,7 @@ tape('non recursive iteration', function (t) {
   })
 })
 
-tape.skip('mixed nested and non nexted iteration', function (t) {
+tape('mixed nested and non nexted iteration', function (t) {
   var db = create.one()
   var vals = ['a', 'a/a', 'a/b', 'a/c', 'a/a/a', 'a/a/b', 'a/a/c']
   var expected = toMap(vals)
