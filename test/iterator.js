@@ -129,6 +129,11 @@ function runIteratorSuite (opts) {
   })
 
   tape(tag + 'lt iteration', function (t) {
+    if (!opts.lexint) {
+      // the `lt` option only makes sense when doing lexicographic iteration.
+      return t.end()
+    }
+
     var db = create.one(null, opts)
     var vals = ['a', 'b', 'c', 'a/b', 'a/c', 'b/a']
 
@@ -144,6 +149,11 @@ function runIteratorSuite (opts) {
   })
 
   tape(tag + 'lte iteration', function (t) {
+    if (!opts.lexint) {
+      // the `lte` option only makes sense when doing lexicographic iteration.
+      return t.end()
+    }
+
     var db = create.one(null, opts)
     var vals = ['a', 'b', 'c', 'a/b', 'a/c', 'b/a']
 
