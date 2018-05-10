@@ -9,7 +9,8 @@ function getSortFunction (opts) {
   return function (a, b) {
     var ha = path(typeof a === 'string' ? a : a.key).join('')
     var hb = path(typeof b === 'string' ? b : b.key).join('')
-    return ha.localeCompare(hb)
+    var sortVal = ha.localeCompare(hb)
+    return opts.reverse ? -1 * sortVal : sortVal
   }
 }
 
@@ -21,6 +22,7 @@ const cases = {
 
 runIterationOrderSuite({ lexint: false })
 runIterationOrderSuite({ lexint: true })
+runIterationOrderSuite({ lexint: true, reverse: true })
 
 function runIterationOrderSuite (opts) {
   run(
@@ -88,7 +90,7 @@ function testSingleFeedWithKeys (t, opts, sorter, keys, cb) {
   var db = create.one(null, opts)
   put(db, keys, function (err) {
     t.error(err, 'no error')
-    testIteratorOrder(t, sorter, db.iterator(), keys, cb)
+    testIteratorOrder(t, sorter, db.iterator(opts), keys, cb)
   })
 }
 
@@ -100,8 +102,8 @@ function testTwoFeedsWithKeys (t, opts, sorter, keys, cb) {
       cb => put(db1, keys.slice(0, half), cb),
       cb => put(db2, keys.slice(half), cb),
       cb => replicate(cb),
-      cb => testIteratorOrder(t, sorter, db1.iterator(), keys, cb),
-      cb => testIteratorOrder(t, sorter, db2.iterator(), keys, cb),
+      cb => testIteratorOrder(t, sorter, db1.iterator(opts), keys, cb),
+      cb => testIteratorOrder(t, sorter, db2.iterator(opts), keys, cb),
       done
     )
   })
