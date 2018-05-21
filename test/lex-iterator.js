@@ -5,6 +5,7 @@ var put = require('./helpers/put')
 tape('lex iteration with no bounds, single db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, false, db.lexIterator(), keys, function (err) {
@@ -26,8 +27,21 @@ tape('lex iteration with no bounds, single db, reversed', function (t) {
   })
 })
 
+tape('lex iterate a big db', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = range(1000, '')
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, false, db.lexIterator(), keys, function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
+  console.log('sorted:', sorted)
   if (reverse) sorted.reverse()
   each(iterator, onEach, onDone)
   function onEach (err, node) {
@@ -50,3 +64,9 @@ function each (ite, cb, done) {
     ite.next(loop)
   })
 }
+
+function range (n, v) {
+  // #0, #1, #2, ...
+  return new Array(n).join('.').split('.').map((a, i) => v + i)
+}
+
