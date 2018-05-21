@@ -2,7 +2,7 @@ var tape = require('tape')
 var create = require('./helpers/create')
 var put = require('./helpers/put')
 
-tape.skip('lex iterate with no bounds, single db', function (t) {
+tape('lex iterate with no bounds, single db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -15,7 +15,7 @@ tape.skip('lex iterate with no bounds, single db', function (t) {
   })
 })
 
-tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
+tape('lex iterate with no bounds, single db, reversed', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   put(db, keys, function (err) {
@@ -27,7 +27,7 @@ tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
   })
 })
 
-tape.skip('lex iterate a big db', function (t) {
+tape('lex iterate a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
