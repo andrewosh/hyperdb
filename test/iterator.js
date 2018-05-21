@@ -3,11 +3,11 @@ var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
 
-runIteratorSuite({ lexint: false })
-runIteratorSuite({ lexint: true })
+runIteratorSuite({ lex: false })
+runIteratorSuite({ lex: true })
 
 function runIteratorSuite (opts) {
-  var tag = '(' + (opts.lexint ? 'lexint' : 'hash') + ') '
+  var tag = '(' + (opts.lex ? 'lex' : 'hash') + ') '
   tape(tag + 'basic iteration', function (t) {
     var db = create.one(null, opts)
     var vals = ['a', 'b', 'c']
@@ -15,7 +15,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator(), function (err, map) {
+      all(db.prefixIterator(), function (err, map) {
         t.error(err, 'no error')
         t.same(map, expected, 'iterated all values')
         t.end()
@@ -31,7 +31,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator(), function (err, map) {
+      all(db.prefixIterator(), function (err, map) {
         t.error(err, 'no error')
         t.same(map, expected, 'iterated all values')
         t.end()
@@ -48,7 +48,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator('foo'), function (err, map) {
+      all(db.prefixIterator('foo'), function (err, map) {
         t.error(err, 'no error')
         t.same(map, expected, 'iterated all values')
         t.end()
@@ -63,7 +63,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator('bar'), function (err, map) {
+      all(db.prefixIterator('bar'), function (err, map) {
         t.error(err, 'no error')
         t.same(map, expected, 'iterated all values')
         t.end()
@@ -81,7 +81,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator('foo'), function (err, map) {
+      all(db.prefixIterator('foo'), function (err, map) {
         t.error(err, 'no error')
         t.same(map, expected, 'iterated all values')
         t.end()
@@ -104,7 +104,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator({recursive: false}), function (err, map) {
+      all(db.prefixIterator({recursive: false}), function (err, map) {
         t.error(err, 'no error')
         var keys = Object.keys(map).map(k => k.split('/')[0])
         t.same(keys.sort(), ['a', 'b', 'c'], 'iterated all values')
@@ -120,7 +120,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator(), function (err, map) {
+      all(db.prefixIterator(), function (err, map) {
         t.error(err, 'no error')
         t.same(map, expected, 'iterated all values')
         t.end()
@@ -129,7 +129,7 @@ function runIteratorSuite (opts) {
   })
 
   tape(tag + 'lt iteration', function (t) {
-    if (!opts.lexint) {
+    if (!opts.lex) {
       // the `lt` option only makes sense when doing lexicographic iteration.
       return t.end()
     }
@@ -139,7 +139,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator({ lt: 'b' }), function (err, map) {
+      all(db.prefixIterator({ lt: 'b' }), function (err, map) {
         t.error(err, 'no error')
         var keys = Object.keys(map)
         t.same(keys.sort(), ['a', 'a/b', 'a/c'], 'stopped before lt')
@@ -149,7 +149,7 @@ function runIteratorSuite (opts) {
   })
 
   tape(tag + 'lte iteration', function (t) {
-    if (!opts.lexint) {
+    if (!opts.lex) {
       // the `lte` option only makes sense when doing lexicographic iteration.
       return t.end()
     }
@@ -159,7 +159,7 @@ function runIteratorSuite (opts) {
 
     put(db, vals, function (err) {
       t.error(err, 'no error')
-      all(db.iterator({ lte: 'b' }), function (err, map) {
+      all(db.prefixIterator({ lte: 'b' }), function (err, map) {
         t.error(err, 'no error')
         var keys = Object.keys(map)
         t.same(keys.sort(), ['a', 'a/b', 'a/c', 'b'], 'stopped at lte')
@@ -186,8 +186,8 @@ function runIteratorSuite (opts) {
 
       function done (err) {
         t.error(err, 'no error')
-        all(db1.iterator(), ondb1all)
-        all(db2.iterator(), ondb2all)
+        all(db1.prefixIterator(), ondb1all)
+        all(db2.prefixIterator(), ondb2all)
       }
 
       function ondb2all (err, map) {
@@ -226,7 +226,7 @@ function runIteratorSuite (opts) {
 
       function done (err) {
         t.error(err, 'no error')
-        all(db1.iterator(), function (err, vals) {
+        all(db1.prefixIterator(), function (err, vals) {
           t.error(err, 'no error')
           t.same(vals, {
             '0': ['00'],
@@ -241,7 +241,7 @@ function runIteratorSuite (opts) {
             '9': ['9']
           })
 
-          all(db2.iterator(), function (err, vals) {
+          all(db2.prefixIterator(), function (err, vals) {
             t.error(err, 'no error')
             t.same(vals, {
               '0': ['00'],
@@ -307,10 +307,10 @@ function runIteratorSuite (opts) {
           expected[v] = [v]
         })
 
-        all(db1.iterator(), function (err, vals) {
+        all(db1.prefixIterator(), function (err, vals) {
           t.error(err, 'no error')
           t.same(vals, expected)
-          all(db2.iterator(), function (err, vals) {
+          all(db2.prefixIterator(), function (err, vals) {
             t.error(err, 'no error')
             t.same(vals, expected)
             t.end()
@@ -336,8 +336,8 @@ function runIteratorSuite (opts) {
       function done (err) {
         t.error(err, 'no error')
 
-        all(a.iterator(), onall)
-        all(b.iterator(), onall)
+        all(a.prefixIterator(), onall)
+        all(b.prefixIterator(), onall)
 
         function onall (err, map) {
           t.error(err, 'no error')
@@ -366,9 +366,9 @@ function runIteratorSuite (opts) {
 
       function done (err) {
         t.error(err, 'no error')
-        all(a.iterator(), onall)
-        all(b.iterator(), onall)
-        all(c.iterator(), onall)
+        all(a.prefixIterator(), onall)
+        all(b.prefixIterator(), onall)
+        all(c.prefixIterator(), onall)
 
         function onall (err, map) {
           t.error(err, 'no error')

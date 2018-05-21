@@ -20,9 +20,9 @@ const cases = {
   '3 paths deep': ['a', 'a/a', 'a/b', 'a/c', 'a/a/a', 'a/a/b', 'a/a/c']
 }
 
-runIterationOrderSuite({ lexint: false })
-runIterationOrderSuite({ lexint: true })
-runIterationOrderSuite({ lexint: true, reverse: true })
+runIterationOrderSuite({ lex: false })
+runIterationOrderSuite({ lex: true })
+runIterationOrderSuite({ lex: true, reverse: true })
 
 function runIterationOrderSuite (opts) {
   run(
@@ -33,7 +33,7 @@ function runIterationOrderSuite (opts) {
 
 function testAllCases (opts, cb) {
   var sorter = getSortFunction(opts)
-  var tag = opts.lexint ? 'lexint' : 'hash'
+  var tag = opts.lex ? 'lex' : 'hash'
   Object.keys(cases).forEach((key) => {
     tape('iterator is ' + tag + ' order sorted (' + key + ')', function (t) {
       var keysToTest = cases[key]
@@ -52,7 +52,7 @@ function fullyVisitFolder (opts, cb) {
     var db = create.one(null, opts)
     put(db, ['a', 'a/b', 'a/b/c', 'b/c', 'b/c/d'], function (err) {
       t.error(err, 'no error')
-      var ite = db.iterator()
+      var ite = db.prefixIterator()
 
       ite.next(function loop (err, val) {
         t.error(err, 'no error')
@@ -90,7 +90,7 @@ function testSingleFeedWithKeys (t, opts, sorter, keys, cb) {
   var db = create.one(null, opts)
   put(db, keys, function (err) {
     t.error(err, 'no error')
-    testIteratorOrder(t, sorter, db.iterator(opts), keys, cb)
+    testIteratorOrder(t, sorter, db.prefixIterator(opts), keys, cb)
   })
 }
 
@@ -102,8 +102,8 @@ function testTwoFeedsWithKeys (t, opts, sorter, keys, cb) {
       cb => put(db1, keys.slice(0, half), cb),
       cb => put(db2, keys.slice(half), cb),
       cb => replicate(cb),
-      cb => testIteratorOrder(t, sorter, db1.iterator(opts), keys, cb),
-      cb => testIteratorOrder(t, sorter, db2.iterator(opts), keys, cb),
+      cb => testIteratorOrder(t, sorter, db1.prefixIterator(opts), keys, cb),
+      cb => testIteratorOrder(t, sorter, db2.prefixIterator(opts), keys, cb),
       done
     )
   })

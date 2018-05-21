@@ -10,6 +10,7 @@
     "hypercore": "^6.13.0",
     "hypercore-protocol": "^6.6.4",
     "inherits": "^2.0.3",
+    "lexicographic-integer": "^1.1.0",
     "mutexify": "^1.2.0",
     "nanoiterator": "^1.1.0",
     "protocol-buffers-encodings": "^1.1.0",

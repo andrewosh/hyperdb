@@ -15,7 +15,8 @@ var sodium = require('sodium-universal')
 var alru = require('array-lru')
 var pathBuilder = require('./lib/path')
 var inherits = require('inherits')
-var iterator = require('./lib/iterator')
+var prefixIterator = require('./lib/iterators/prefix')
+var lexIterator = require('./lib/iterators/lex')
 var differ = require('./lib/differ')
 var history = require('./lib/history')
 var get = require('./lib/get')
@@ -512,9 +513,13 @@ HyperDB.prototype.diff = function (other, prefix, opts) {
   return differ(this, other || checkoutEmpty(this), prefix || '', opts)
 }
 
-HyperDB.prototype.iterator = function (prefix, opts) {
-  if (isOptions(prefix)) return this.iterator('', prefix)
-  return iterator(this, normalizeKey(prefix || ''), opts)
+HyperDB.prototype.prefixIterator = function (prefix, opts) {
+  if (isOptions(prefix)) return this.prefixIterator('', prefix)
+  return prefixIterator(this, normalizeKey(prefix || ''), opts)
+}
+
+HyperDB.prototype.lexIterator = function (opts) {
+  return lexIterator(this, opts)
 }
 
 HyperDB.prototype.createHistoryStream = function (opts) {
@@ -527,7 +532,7 @@ HyperDB.prototype.createDiffStream = function (other, prefix, opts) {
 }
 
 HyperDB.prototype.createReadStream = function (prefix, opts) {
-  return toStream(this.iterator(prefix, opts))
+  return toStream(this.prefixIterator(prefix, opts))
 }
 
 HyperDB.prototype.createWriteStream = function (cb) {
