@@ -39,7 +39,7 @@ tape.skip('lex iterate a big db', function (t) {
   })
 })
 
-tape.skip('lex iterate a big db, reverse', function (t) {
+tape('lex iterate a big db, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -64,10 +64,49 @@ tape('lex iterate with gt', function (t) {
   })
 })
 
+tape('lex iterate with gt, reverse', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  console.log('keys:', keys)
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, true, db.lexIterator({ gt: 'a', reverse: true }), ['aa', 'aab', 'b'], function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
+tape('lex iterate with lt', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  console.log('keys:', keys)
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, false, db.lexIterator({ lt: 'a' }), ['0aa', '0b', '1b'], function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
+tape('lex iterate with lt, reverse', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  console.log('keys:', keys)
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, true, db.lexIterator({ lt: 'a', reverse: true }), ['0aa', '0b', '1b'], function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
-  console.log('sorted:', sorted)
   if (reverse) sorted.reverse()
+  console.log('sorted:', sorted)
   each(iterator, onEach, onDone)
   function onEach (err, node) {
     t.error(err, 'no error')
