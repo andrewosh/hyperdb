@@ -39,6 +39,18 @@ tape('lex iterate a big db', function (t) {
   })
 })
 
+tape('lex iterate a big db, reverse', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = range(1000, '')
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, true, db.lexIterator({ reverse: true }), keys, function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
   console.log('sorted:', sorted)
