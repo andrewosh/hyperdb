@@ -129,6 +129,30 @@ tape('lex iterate with both lt and gt, reverse', function (t) {
   })
 })
 
+tape('lex iterate a small part of a big db', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = range(10000, '')
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, false, db.lexIterator({ gt: '5555', lt: '5558' }), ['5556', '5557'], function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
+tape('lex iterate with paths', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = ['a/a', 'a/b', 'b/0', 'b/a', 'c/0', 'c/1', 'd/a', 'd/b']
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, false, db.lexIterator({ gt: 'b/1', lt: 'c/1' }), ['b/a', 'c/0'], function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
   if (reverse) sorted.reverse()
