@@ -3,7 +3,7 @@ var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
 
-tape('lex iterate with no bounds, single db', function (t) {
+tape.skip('lex iterate with no bounds, single db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -16,7 +16,7 @@ tape('lex iterate with no bounds, single db', function (t) {
   })
 })
 
-tape('lex iterate with no bounds, single db, reversed', function (t) {
+tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   put(db, keys, function (err) {
@@ -28,7 +28,7 @@ tape('lex iterate with no bounds, single db, reversed', function (t) {
   })
 })
 
-tape('lex iterate a big db', function (t) {
+tape.skip('lex iterate a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -40,7 +40,7 @@ tape('lex iterate a big db', function (t) {
   })
 })
 
-tape('lex iterate a big db, reverse', function (t) {
+tape.skip('lex iterate a big db, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -52,7 +52,7 @@ tape('lex iterate a big db, reverse', function (t) {
   })
 })
 
-tape('lex iterate with gt', function (t) {
+tape.skip('lex iterate with gt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -65,7 +65,7 @@ tape('lex iterate with gt', function (t) {
   })
 })
 
-tape('lex iterate with gt, reverse', function (t) {
+tape.skip('lex iterate with gt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -78,7 +78,7 @@ tape('lex iterate with gt, reverse', function (t) {
   })
 })
 
-tape('lex iterate with lt', function (t) {
+tape.skip('lex iterate with lt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -91,7 +91,7 @@ tape('lex iterate with lt', function (t) {
   })
 })
 
-tape('lex iterate with lt, reverse', function (t) {
+tape.skip('lex iterate with lt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -104,7 +104,7 @@ tape('lex iterate with lt, reverse', function (t) {
   })
 })
 
-tape('lex iterate with both lt and gt', function (t) {
+tape.skip('lex iterate with both lt and gt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -117,7 +117,7 @@ tape('lex iterate with both lt and gt', function (t) {
   })
 })
 
-tape('lex iterate with both lt and gt, reverse', function (t) {
+tape.skip('lex iterate with both lt and gt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -130,7 +130,7 @@ tape('lex iterate with both lt and gt, reverse', function (t) {
   })
 })
 
-tape('lex iterate a small part of a big db', function (t) {
+tape.skip('lex iterate a small part of a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(10000, '')
   put(db, keys, function (err) {
@@ -142,7 +142,7 @@ tape('lex iterate a small part of a big db', function (t) {
   })
 })
 
-tape('lex iterate with paths', function (t) {
+tape.skip('lex iterate with paths', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a/a', 'a/b', 'b/0', 'b/a', 'c/0', 'c/1', 'd/a', 'd/b']
   put(db, keys, function (err) {
@@ -225,8 +225,9 @@ tape('two writers, simple fork, lt and gt bounds', function (t) {
     }
   })
 })
+
 tape('lex iterate two writers, one fork', function (t) {
-  create.two(opts, function (db1, db2, replicate) {
+  create.two({ lex: true }, function (db1, db2, replicate) {
     run(
       cb => db1.put('0', '0', cb),
       cb => db2.put('2', '2', cb),
@@ -282,6 +283,152 @@ tape('lex iterate two writers, one fork', function (t) {
           t.end()
         })
       })
+    }
+  })
+})
+
+tape('lex iterate two writers, one fork, many values', function (t) {
+  var r = range(100, 'i')
+
+  create.two({ lex: true }, function (db1, db2, replicate) {
+    run(
+      cb => db1.put('0', '0', cb),
+      cb => db2.put('2', '2', cb),
+      cb => db2.put('3', '3', cb),
+      cb => db2.put('4', '4', cb),
+      cb => db2.put('5', '5', cb),
+      cb => db2.put('6', '6', cb),
+      cb => db2.put('7', '7', cb),
+      cb => db2.put('8', '8', cb),
+      cb => db2.put('9', '9', cb),
+      cb => replicate(cb),
+      cb => db1.put('1', '1a', cb),
+      cb => db2.put('1', '1b', cb),
+      cb => replicate(cb),
+      cb => db1.put('0', '00', cb),
+      r.map(i => cb => db1.put(i, i, cb)),
+      cb => replicate(cb),
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+
+      var expected = {
+        '0': ['00'],
+        '1': ['1a', '1b'],
+        '2': ['2'],
+        '3': ['3'],
+        '4': ['4'],
+        '5': ['5'],
+        '6': ['6'],
+        '7': ['7'],
+        '8': ['8'],
+        '9': ['9']
+      }
+
+      r.forEach(function (v) {
+        expected[v] = [v]
+      })
+
+      all(db1.lexIterator(), function (err, vals) {
+        t.error(err, 'no error')
+        t.same(vals, expected)
+        all(db2.lexIterator(), function (err, vals) {
+          t.error(err, 'no error')
+          t.same(vals, expected)
+          t.end()
+        })
+      })
+    }
+  })
+})
+
+tape('lex iterate two writers, fork', function (t) {
+  t.plan(2 * 2 + 1)
+
+  create.two({ lex: true }, function (a, b, replicate) {
+    run(
+      cb => a.put('a', 'a', cb),
+      replicate,
+      cb => b.put('a', 'b', cb),
+      cb => a.put('b', 'c', cb),
+      replicate,
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+
+      all(a.lexIterator(), onall)
+      all(b.lexIterator(), onall)
+
+      function onall (err, map) {
+        t.error(err, 'no error')
+        t.same(map, {b: ['c'], a: ['b']})
+      }
+    }
+  })
+})
+
+tape('lex iterate three writers, two forks', function (t) {
+  t.plan(2 * 3 + 1)
+
+  var replicate = require('./helpers/replicate')
+
+  create.three({ lex: true }, function (a, b, c, replicateAll) {
+    run(
+      cb => a.put('a', 'a', cb),
+      replicateAll,
+      cb => b.put('a', 'ab', cb),
+      cb => a.put('some', 'some', cb),
+      cb => replicate(a, c, cb),
+      cb => c.put('c', 'c', cb),
+      replicateAll,
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+      all(a.lexIterator(), onall)
+      all(b.lexIterator(), onall)
+      all(c.lexIterator(), onall)
+
+      function onall (err, map) {
+        t.error(err, 'no error')
+        t.same(map, {a: ['ab'], c: ['c'], some: ['some']})
+      }
+    }
+  })
+})
+
+tape('lex iterate three writers, two forks, and gt/lt bounds', function (t) {
+  t.plan(2 * 3 + 1)
+
+  var replicate = require('./helpers/replicate')
+
+  create.three({ lex: true }, function (a, b, c, replicateAll) {
+    run(
+      cb => a.put('a', 'a', cb),
+      replicateAll,
+      cb => b.put('a', 'ab', cb),
+      cb => a.put('some', 'some', cb),
+      cb => replicate(a, c, cb),
+      cb => c.put('c', 'c', cb),
+      replicateAll,
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+      all(a.lexIterator({ gt: 'a', lte: 'c' }), onall)
+      all(b.lexIterator({ gt: 'a', lte: 'c' }), onall)
+      all(c.lexIterator({ gt: 'a', lte: 'c' }), onall)
+
+      function onall (err, map) {
+        t.error(err, 'no error')
+        t.same(map, {c: ['c']})
+      }
     }
   })
 })
