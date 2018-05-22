@@ -455,6 +455,32 @@ tape('lex iterate three writers, two forks, and gt/lt bounds, and reverse', func
   })
 })
 
+tape('simple lex iterate over a checkout', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    var checkout = db.snapshot()
+    testIteratorOrder(t, false, checkout.lexIterator(), keys, function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
+tape('lex bounded iteration over a checkout', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    var checkout = db.snapshot()
+    testIteratorOrder(t, false, checkout.lexIterator({ gt: '1c', lt: 'b' }), ['a', 'aa', 'aab'], function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
   if (reverse) sorted.reverse()

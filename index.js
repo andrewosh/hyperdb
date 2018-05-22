@@ -81,6 +81,8 @@ function HyperDB (storage, key, opts) {
   this._onwrite = opts.onwrite || null
   this._authorized = []
 
+  this._lex = opts.lex || false
+
   this.ready()
 }
 
@@ -199,18 +201,20 @@ HyperDB.prototype.checkout = function (version, opts) {
     version = Buffer.from(version, 'hex')
   }
 
+  var options = Object.assign({}, {
+    checkout: this,
+    version: version,
+    map: this._map,
+    reduce: this._reduce,
+    lex: this._lex
+  }, opts)
+
   if (Array.isArray(version)) {
-    opts.heads = version
+    options.heads = version
     version = null
   }
 
-  return new HyperDB(this._storage, this.key, {
-    checkout: this,
-    version: version,
-    map: opts.map !== undefined ? opts.map : this._map,
-    reduce: opts.reduce !== undefined ? opts.reduce : this._reduce,
-    heads: opts.heads
-  })
+  return new HyperDB(this._storage, this.key, options)
 }
 
 HyperDB.prototype.snapshot = function (opts) {
