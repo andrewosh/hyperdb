@@ -3,7 +3,7 @@ var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
 
-tape.skip('lex iterate with no bounds, single db', function (t) {
+tape('lex iterate with no bounds, single db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -16,7 +16,7 @@ tape.skip('lex iterate with no bounds, single db', function (t) {
   })
 })
 
-tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
+tape('lex iterate with no bounds, single db, reversed', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   put(db, keys, function (err) {
@@ -28,7 +28,7 @@ tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
   })
 })
 
-tape.skip('lex iterate a big db', function (t) {
+tape('lex iterate a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -40,7 +40,7 @@ tape.skip('lex iterate a big db', function (t) {
   })
 })
 
-tape.skip('lex iterate a big db, reverse', function (t) {
+tape('lex iterate a big db, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -52,7 +52,7 @@ tape.skip('lex iterate a big db, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate with gt', function (t) {
+tape('lex iterate with gt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -65,7 +65,7 @@ tape.skip('lex iterate with gt', function (t) {
   })
 })
 
-tape.skip('lex iterate with gt, reverse', function (t) {
+tape('lex iterate with gt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -78,7 +78,7 @@ tape.skip('lex iterate with gt, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate with lt', function (t) {
+tape('lex iterate with lt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -91,7 +91,7 @@ tape.skip('lex iterate with lt', function (t) {
   })
 })
 
-tape.skip('lex iterate with lt, reverse', function (t) {
+tape('lex iterate with lt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -104,7 +104,7 @@ tape.skip('lex iterate with lt, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate with both lt and gt', function (t) {
+tape('lex iterate with both lt and gt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -117,7 +117,7 @@ tape.skip('lex iterate with both lt and gt', function (t) {
   })
 })
 
-tape.skip('lex iterate with both lt and gt, reverse', function (t) {
+tape('lex iterate with both lt and gt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   console.log('keys:', keys)
@@ -130,7 +130,7 @@ tape.skip('lex iterate with both lt and gt, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate a small part of a big db', function (t) {
+tape('lex iterate a small part of a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(10000, '')
   put(db, keys, function (err) {
@@ -142,7 +142,7 @@ tape.skip('lex iterate a small part of a big db', function (t) {
   })
 })
 
-tape.skip('lex iterate with paths', function (t) {
+tape('lex iterate with paths', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a/a', 'a/b', 'b/0', 'b/a', 'c/0', 'c/1', 'd/a', 'd/b']
   put(db, keys, function (err) {
