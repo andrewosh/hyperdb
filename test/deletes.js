@@ -67,7 +67,7 @@ tape('delete one in many (iteration)', function (t) {
   function done (err) {
     t.error(err, 'no error')
 
-    var ite = db.iterator()
+    var ite = db.prefixIterator()
     var actual = []
 
     ite.next(function loop (err, node) {

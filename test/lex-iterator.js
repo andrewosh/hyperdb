@@ -3,10 +3,9 @@ var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
 
-tape.skip('lex iterate with no bounds, single db', function (t) {
+tape('lex iterate with no bounds, single db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, false, db.lexIterator(), keys, function (err) {
@@ -16,7 +15,7 @@ tape.skip('lex iterate with no bounds, single db', function (t) {
   })
 })
 
-tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
+tape('lex iterate with no bounds, single db, reversed', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
   put(db, keys, function (err) {
@@ -28,7 +27,7 @@ tape.skip('lex iterate with no bounds, single db, reversed', function (t) {
   })
 })
 
-tape.skip('lex iterate a big db', function (t) {
+tape('lex iterate a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -40,7 +39,7 @@ tape.skip('lex iterate a big db', function (t) {
   })
 })
 
-tape.skip('lex iterate a big db, reverse', function (t) {
+tape('lex iterate a big db, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(1000, '')
   put(db, keys, function (err) {
@@ -52,10 +51,9 @@ tape.skip('lex iterate a big db, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate with gt', function (t) {
+tape('lex iterate with gt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, false, db.lexIterator({ gt: 'a' }), ['aa', 'aab', 'b'], function (err) {
@@ -65,10 +63,9 @@ tape.skip('lex iterate with gt', function (t) {
   })
 })
 
-tape.skip('lex iterate with gt, reverse', function (t) {
+tape('lex iterate with gt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, true, db.lexIterator({ gt: 'a', reverse: true }), ['aa', 'aab', 'b'], function (err) {
@@ -78,10 +75,9 @@ tape.skip('lex iterate with gt, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate with lt', function (t) {
+tape('lex iterate with lt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, false, db.lexIterator({ lt: 'a' }), ['0aa', '0b', '1b'], function (err) {
@@ -91,10 +87,9 @@ tape.skip('lex iterate with lt', function (t) {
   })
 })
 
-tape.skip('lex iterate with lt, reverse', function (t) {
+tape('lex iterate with lt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, true, db.lexIterator({ lt: 'a', reverse: true }), ['0aa', '0b', '1b'], function (err) {
@@ -104,10 +99,9 @@ tape.skip('lex iterate with lt, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate with both lt and gt', function (t) {
+tape('lex iterate with both lt and gt', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, false, db.lexIterator({ lt: 'aa', gt: '0aa' }), ['a', '0b', '1b'], function (err) {
@@ -117,10 +111,9 @@ tape.skip('lex iterate with both lt and gt', function (t) {
   })
 })
 
-tape.skip('lex iterate with both lt and gt, reverse', function (t) {
+tape('lex iterate with both lt and gt, reverse', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
-  console.log('keys:', keys)
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, true, db.lexIterator({ lt: 'aa', gt: '0aa', reverse: true }), ['a', '0b', '1b'], function (err) {
@@ -130,7 +123,7 @@ tape.skip('lex iterate with both lt and gt, reverse', function (t) {
   })
 })
 
-tape.skip('lex iterate a small part of a big db', function (t) {
+tape('lex iterate a small part of a big db', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = range(10000, '')
   put(db, keys, function (err) {
@@ -142,7 +135,7 @@ tape.skip('lex iterate a small part of a big db', function (t) {
   })
 })
 
-tape.skip('lex iterate with paths', function (t) {
+tape('lex iterate with paths', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a/a', 'a/b', 'b/0', 'b/a', 'c/0', 'c/1', 'd/a', 'd/b']
   put(db, keys, function (err) {
@@ -173,7 +166,6 @@ tape('two writers, simple fork, no bounds', function (t) {
     function done (err) {
       t.error(err, 'no error')
 
-      console.log('here')
       all(db1.lexIterator(), ondb1all)
       all(db2.lexIterator(), ondb2all)
     }
@@ -209,7 +201,6 @@ tape('two writers, simple fork, lt and gt bounds', function (t) {
     function done (err) {
       t.error(err, 'no error')
 
-      console.log('here')
       all(db1.lexIterator({ gt: '1', lt: '2' }), ondb1all)
       all(db2.lexIterator({ gt: '1', lt: '2' }), ondb2all)
     }
@@ -436,7 +427,6 @@ tape('lex iterate three writers, two forks, and gt/lt bounds', function (t) {
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
   if (reverse) sorted.reverse()
-  console.log('sorted:', sorted)
   each(iterator, onEach, onDone)
   function onEach (err, node) {
     t.error(err, 'no error')
@@ -464,14 +454,6 @@ function range (n, v) {
   return new Array(n).join('.').split('.').map((a, i) => v + i)
 }
 
-function toMap (list) {
-  var map = {}
-  for (var i = 0; i < list.length; i++) {
-    map[list[i]] = list[i]
-  }
-  return map
-}
-
 function all (ite, cb) {
   var vals = {}
 
@@ -484,4 +466,3 @@ function all (ite, cb) {
     ite.next(loop)
   })
 }
-

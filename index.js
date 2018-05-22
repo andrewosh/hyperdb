@@ -491,7 +491,7 @@ HyperDB.prototype.list = function (prefix, opts, cb) {
   if (typeof prefix === 'function') return this.list('', null, prefix)
   if (typeof opts === 'function') return this.list(prefix, null, opts)
 
-  var ite = this.iterator(prefix, opts)
+  var ite = this.prefixIterator(prefix, opts)
   var list = []
 
   ite.next(loop)

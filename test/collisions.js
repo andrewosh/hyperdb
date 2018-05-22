@@ -25,7 +25,7 @@ tape('two keys with same siphash (iterator)', function (t) {
 
   db.put('idgcmnmna', 'a', function () {
     db.put('mpomeiehc', 'b', function () {
-      var ite = db.iterator()
+      var ite = db.prefixIterator()
 
       ite.next(function (err, node) {
         t.error(err, 'no error')
@@ -49,7 +49,7 @@ tape('two prefixes with same siphash (iterator)', function (t) {
 
   db.put('idgcmnmna/a', 'a', function () {
     db.put('mpomeiehc/b', 'b', function () {
-      var ite = db.iterator('idgcmnmna')
+      var ite = db.prefixIterator('idgcmnmna')
 
       ite.next(function (err, node) {
         t.error(err, 'no error')
