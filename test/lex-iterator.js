@@ -225,6 +225,66 @@ tape('two writers, simple fork, lt and gt bounds', function (t) {
     }
   })
 })
+tape('lex iterate two writers, one fork', function (t) {
+  create.two(opts, function (db1, db2, replicate) {
+    run(
+      cb => db1.put('0', '0', cb),
+      cb => db2.put('2', '2', cb),
+      cb => db2.put('3', '3', cb),
+      cb => db2.put('4', '4', cb),
+      cb => db2.put('5', '5', cb),
+      cb => db2.put('6', '6', cb),
+      cb => db2.put('7', '7', cb),
+      cb => db2.put('8', '8', cb),
+      cb => db2.put('9', '9', cb),
+      cb => replicate(cb),
+      cb => db1.put('1', '1a', cb),
+      cb => db2.put('1', '1b', cb),
+      cb => replicate(cb),
+      cb => db1.put('0', '00', cb),
+      cb => replicate(cb),
+      cb => db2.put('hi', 'ho', cb),
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+      all(db1.lexIterator(), function (err, vals) {
+        t.error(err, 'no error')
+        t.same(vals, {
+          '0': ['00'],
+          '1': ['1a', '1b'],
+          '2': ['2'],
+          '3': ['3'],
+          '4': ['4'],
+          '5': ['5'],
+          '6': ['6'],
+          '7': ['7'],
+          '8': ['8'],
+          '9': ['9']
+        })
+
+        all(db2.lexIterator(), function (err, vals) {
+          t.error(err, 'no error')
+          t.same(vals, {
+            '0': ['00'],
+            '1': ['1a', '1b'],
+            '2': ['2'],
+            '3': ['3'],
+            '4': ['4'],
+            '5': ['5'],
+            '6': ['6'],
+            '7': ['7'],
+            '8': ['8'],
+            '9': ['9'],
+            'hi': ['ho']
+          })
+          t.end()
+        })
+      })
+    }
+  })
+})
 
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
