@@ -190,6 +190,42 @@ tape('two writers, simple fork, no bounds', function (t) {
   })
 })
 
+tape('two writers, simple fork, lt and gt bounds', function (t) {
+  t.plan(2 * 2 + 1)
+
+  create.two({ lex: true }, function (db1, db2, replicate) {
+    run(
+      cb => db1.put('0', '0', cb),
+      replicate,
+      cb => db1.put('1', '1a', cb),
+      cb => db2.put('1', '1b', cb),
+      cb => db1.put('10', '10', cb),
+      replicate,
+      cb => db1.put('2', '2', cb),
+      cb => db1.put('1/0', '1/0', cb),
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+
+      console.log('here')
+      all(db1.lexIterator({ gt: '1', lt: '2' }), ondb1all)
+      all(db2.lexIterator({ gt: '1', lt: '2' }), ondb2all)
+    }
+
+    function ondb2all (err, map) {
+      t.error(err, 'no error')
+      t.same(map, {'10': ['10']})
+    }
+
+    function ondb1all (err, map) {
+      t.error(err, 'no error')
+      t.same(map, {'10': ['10'], '1/0': ['1/0']})
+    }
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
   if (reverse) sorted.reverse()
