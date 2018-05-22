@@ -424,6 +424,37 @@ tape('lex iterate three writers, two forks, and gt/lt bounds', function (t) {
   })
 })
 
+tape('lex iterate three writers, two forks, and gt/lt bounds, and reverse', function (t) {
+  var replicate = require('./helpers/replicate')
+  var keys = ['some', 'c']
+
+  create.three({ lex: true }, function (a, b, c, replicateAll) {
+    run(
+      cb => a.put('a', 'a', cb),
+      replicateAll,
+      cb => b.put('a', 'ab', cb),
+      cb => a.put('some', 'some', cb),
+      cb => replicate(a, c, cb),
+      cb => c.put('c', 'c', cb),
+      replicateAll,
+      done
+    )
+
+    function done (err) {
+      t.error(err, 'no error')
+      var pending = 3
+      testIteratorOrder(t, true, a.lexIterator({ gt: 'a', lte: 'sp', reverse: true }), keys, ondone)
+      testIteratorOrder(t, true, b.lexIterator({ gt: 'a', lte: 'sp', reverse: true }), keys, ondone)
+      testIteratorOrder(t, true, c.lexIterator({ gt: 'a', lte: 'sp', reverse: true }), keys, ondone)
+
+      function ondone (err) {
+        t.error(err, 'no error')
+        if (!--pending) t.end()
+      }
+    }
+  })
+})
+
 function testIteratorOrder (t, reverse, iterator, expected, done) {
   var sorted = expected.slice().sort()
   if (reverse) sorted.reverse()
