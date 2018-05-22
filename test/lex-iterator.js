@@ -154,7 +154,7 @@ tape('lex iterate with paths', function (t) {
   })
 })
 
-tape('two writers, simple fork, no bounds', function (t) {
+tape.skip('two writers, simple fork, no bounds', function (t) {
   t.plan(1 * 2 + 1)
 
   create.two({ lex: true }, function (db1, db2, replicate) {
