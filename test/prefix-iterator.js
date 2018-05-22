@@ -128,46 +128,6 @@ function runIteratorSuite (opts) {
     })
   })
 
-  tape(tag + 'lt iteration', function (t) {
-    if (!opts.lex) {
-      // the `lt` option only makes sense when doing lexicographic iteration.
-      return t.end()
-    }
-
-    var db = create.one(null, opts)
-    var vals = ['a', 'b', 'c', 'a/b', 'a/c', 'b/a']
-
-    put(db, vals, function (err) {
-      t.error(err, 'no error')
-      all(db.prefixIterator({ lt: 'b' }), function (err, map) {
-        t.error(err, 'no error')
-        var keys = Object.keys(map)
-        t.same(keys.sort(), ['a', 'a/b', 'a/c'], 'stopped before lt')
-        t.end()
-      })
-    })
-  })
-
-  tape(tag + 'lte iteration', function (t) {
-    if (!opts.lex) {
-      // the `lte` option only makes sense when doing lexicographic iteration.
-      return t.end()
-    }
-
-    var db = create.one(null, opts)
-    var vals = ['a', 'b', 'c', 'a/b', 'a/c', 'b/a']
-
-    put(db, vals, function (err) {
-      t.error(err, 'no error')
-      all(db.prefixIterator({ lte: 'b' }), function (err, map) {
-        t.error(err, 'no error')
-        var keys = Object.keys(map)
-        t.same(keys.sort(), ['a', 'a/b', 'a/c', 'b'], 'stopped at lte')
-        t.end()
-      })
-    })
-  })
-
   tape(tag + 'two writers, simple fork', function (t) {
     t.plan(2 * 2 + 1)
 
