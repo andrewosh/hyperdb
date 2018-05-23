@@ -535,8 +535,12 @@ HyperDB.prototype.createDiffStream = function (other, prefix, opts) {
   return toStream(this.diff(other, prefix, opts))
 }
 
-HyperDB.prototype.createReadStream = function (prefix, opts) {
+HyperDB.prototype.createPrefixReadStream = function (prefix, opts) {
   return toStream(this.prefixIterator(prefix, opts))
+}
+
+HyperDB.prototype.createLexReadStream = function (opts) {
+  return toStream(this.lexIterator(opts))
 }
 
 HyperDB.prototype.createWriteStream = function (cb) {

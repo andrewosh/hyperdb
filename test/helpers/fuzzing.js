@@ -128,7 +128,7 @@ function validate (t, db, processedBatches, cb) {
   t.test(`validating after ${processedBatches.length} replications`, function (t) {
     t.plan(expectedWrites.size + 1)
 
-    var readStream = db.createReadStream('/')
+    var readStream = db.createPrefixReadStream('/')
     readStream.on('end', function () {
       var keys = expectedWrites.size === 0 ? 'none' : Array.from(expectedWrites.keys()).join(',') 
       t.same(expectedWrites.size, 0, `missing keys: ${keys}`)
