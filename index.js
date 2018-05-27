@@ -120,7 +120,7 @@ HyperDB.prototype.batch = function (batch, cb) {
         }
 
         var next = batch[i++]
-        put(self, clock, heads, next.key, next.value || null, loop)
+        put(self, clock, heads, next.key, next.value, {delete: next.type === 'del'}, loop)
       }
 
       function done (err) {
@@ -133,7 +133,8 @@ HyperDB.prototype.batch = function (batch, cb) {
   })
 }
 
-HyperDB.prototype.put = function (key, val, cb) {
+HyperDB.prototype.put = function (key, val, opts, cb) {
+  if (typeof opts === 'function') return this.put(key, val, null, opts)
   if (!cb) cb = noop
 
   if (this._checkout) {
@@ -148,7 +149,7 @@ HyperDB.prototype.put = function (key, val, cb) {
     var clock = self._clock()
     self.heads(function (err, heads) {
       if (err) return unlock(err)
-      put(self, clock, heads, key, val, unlock)
+      put(self, clock, heads, key, val, opts, unlock)
     })
 
     function unlock (err, node) {
@@ -158,7 +159,7 @@ HyperDB.prototype.put = function (key, val, cb) {
 }
 
 HyperDB.prototype.del = function (key, cb) {
-  this.put(key, null, cb)
+  this.put(key, null, { delete: true }, cb)
 }
 
 HyperDB.prototype.watch = function (key, cb) {
@@ -259,9 +260,7 @@ HyperDB.prototype.heads = function (cb) {
 }
 
 HyperDB.prototype._waitForUpdate = function () {
-  return this._replicating.length &&
-    !this._writers[0].length() &&
-    this.local !== this.source
+  return !this._writers[0].length() && !this.local.length
 }
 
 HyperDB.prototype._index = function (key) {
@@ -320,7 +319,7 @@ HyperDB.prototype.replicate = function (opts) {
     if (stream.destroyed) return
 
     // bootstrap content feeds
-    if (self.contentFeeds && !self.contentFeeds[0]) self._writers[0].get(0, noop)
+    if (self.contentFeeds && !self.contentFeeds[0]) self._writers[0].get(1, noop)
 
     var i = 0
 
@@ -609,9 +608,14 @@ HyperDB.prototype._ready = function (cb) {
 
   function done (err) {
     if (err) return cb(err)
-    self.opened = true
-    self.emit('ready')
-    cb(null)
+    self._localWriter.ensureHeader(onheader)
+
+    function onheader (err) {
+      if (err) return cb(err)
+      self.opened = true
+      self.emit('ready')
+      cb(null)
+    }
   }
 
   function feed (dir, key, feedOpts) {
@@ -663,6 +667,7 @@ HyperDB.prototype._ready = function (cb) {
     self.source = self._checkout.source
     self.local = self._checkout.local
     self.localContent = self._checkout.localContent
+    self._localWriter = self._checkout._localWriter
     self.key = self._checkout.key
     self.discoveryKey = self._checkout.discoveryKey
     self._heads = heads
@@ -706,6 +711,16 @@ Writer.prototype.authorize = function () {
   if (this._feedsMessage) this._updateFeeds()
 }
 
+Writer.prototype.ensureHeader = function (cb) {
+  if (this._feed.length) return cb(null)
+
+  var header = {
+    protocol: 'hyperdb'
+  }
+
+  this._feed.append(messages.Header.encode(header), cb)
+}
+
 Writer.prototype.append = function (entry, cb) {
   if (!this._clock) this._clock = this._feed.length
 
@@ -720,6 +735,7 @@ Writer.prototype.append = function (entry, cb) {
   var mapped = {
     key: entry.key,
     value: null,
+    deleted: entry.deleted,
     inflate: 0,
     clock: null,
     trie: null,
@@ -739,7 +755,7 @@ Writer.prototype.append = function (entry, cb) {
   mapped.clock = this._mapList(entry.clock, this._encodeMap, 0)
   mapped.inflate = this._feeds
   mapped.trie = trie.encode(entry.trie, this._encodeMap)
-  if (entry.value) mapped.value = this._db._valueEncoding.encode(entry.value)
+  if (!isNullish(entry.value)) mapped.value = this._db._valueEncoding.encode(entry.value)
 
   if (this._db._batching) {
     this._db._batching.push(enc.encode(mapped))
@@ -767,11 +783,19 @@ Writer.prototype._maybeUpdateFeeds = function () {
 }
 
 Writer.prototype._decode = function (seq, buf, cb) {
-  var val = messages.Entry.decode(buf)
+  try {
+    var val = messages.Entry.decode(buf)
+  } catch (e) {
+    return cb(e)
+  }
   val[util.inspect.custom] = inspect
   val.seq = seq
   val.path = this._db._path(val.key, true)
-  val.value = val.value && this._db._valueEncoding.decode(val.value)
+  try {
+    val.value = val.value && this._db._valueEncoding.decode(val.value)
+  } catch (e) {
+    return cb(e)
+  }
 
   if (this._feedsMessage && this._feedsLoaded === val.inflate) {
     this._maybeUpdateFeeds()
@@ -790,7 +814,6 @@ Writer.prototype._decode = function (seq, buf, cb) {
 
 Writer.prototype.get = function (seq, cb) {
   var self = this
-
   var cached = this._cache.get(seq)
   if (cached) return process.nextTick(cb, null, cached, this._id)
 
@@ -810,7 +833,7 @@ Writer.prototype._getFeed = function (seq, cb) {
 
 Writer.prototype.head = function (cb) {
   var len = this.length()
-  if (!len) return process.nextTick(cb, null, null, this._id)
+  if (len < 2) return process.nextTick(cb, null, null, this._id)
   this.get(len - 1, cb)
 }
 
@@ -834,7 +857,12 @@ Writer.prototype._loadFeeds = function (head, buf, cb) {
 
   function onfeeds (err, buf) {
     if (err) return cb(err)
-    done(messages.InflatedEntry.decode(buf))
+    try {
+      var msg = messages.InflatedEntry.decode(buf)
+    } catch (e) {
+      return cb(e)
+    }
+    done(msg)
   }
 
   function done (msg) {
@@ -1017,6 +1045,10 @@ function createStorage (st) {
 
 function reduceFirst (a, b) {
   return a
+}
+
+function isNullish (v) {
+  return v === null || v === undefined
 }
 
 function noop () {}

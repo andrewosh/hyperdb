@@ -1,4 +1,5 @@
 var tape = require('tape')
+var cmp = require('compare')
 var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
@@ -9,7 +10,7 @@ function getSortFunction (opts) {
   return function (a, b) {
     var ha = path(typeof a === 'string' ? a : a.key).join('')
     var hb = path(typeof b === 'string' ? b : b.key).join('')
-    var sortVal = ha.localeCompare(hb)
+    var sortVal = cmp(ha, hb)
     return opts.reverse ? -1 * sortVal : sortVal
   }
 }
