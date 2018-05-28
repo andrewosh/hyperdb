@@ -1,4 +1,6 @@
 var tape = require('tape')
+var random = require('seed-random')
+
 var create = require('./helpers/create')
 var put = require('./helpers/put')
 var run = require('./helpers/run')
@@ -18,6 +20,36 @@ tape('lex iterate with no bounds, single db', function (t) {
 tape('lex iterate with no bounds, single db, reversed', function (t) {
   var db = create.one(null, { lex: true, reduce: false })
   var keys = ['a', 'aab', 'aa', 'b', '0aa', '0b', '1b']
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, true, db.lexIterator({ reverse: true }), keys, function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
+tape('lex iterate a small random db', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var gen = random('hello')
+  var keys = new Array(20).fill(0).map(function (i) {
+    return Math.floor(gen() * 100000) + ''
+  })
+  put(db, keys, function (err) {
+    t.error(err, 'no error')
+    testIteratorOrder(t, false, db.lexIterator(), keys, function (err) {
+      t.error(err, 'no error')
+      t.end()
+    })
+  })
+})
+
+tape('lex iterate a small random db, reverse', function (t) {
+  var db = create.one(null, { lex: true, reduce: false })
+  var gen = random('hello')
+  var keys = new Array(10).fill(0).map(function (i) {
+    return Math.floor(gen() * 100000) + ''
+  })
   put(db, keys, function (err) {
     t.error(err, 'no error')
     testIteratorOrder(t, true, db.lexIterator({ reverse: true }), keys, function (err) {
