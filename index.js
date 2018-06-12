@@ -58,10 +58,13 @@ function HyperDB (storage, key, opts) {
   sodium.randombytes_buf(this.id)
 
   this._path = pathBuilder(opts)
-  this._storage = createStorage(storage)
-  this._contentStorage = typeof opts.contentFeed === 'function'
-    ? opts.contentFeed
-    : opts.contentFeed ? this._storage : null
+  this._factory = opts.factory
+  if (!this._factory) {
+    this._storage = createStorage(storage)
+    this._contentStorage = typeof opts.contentFeed === 'function'
+      ? opts.contentFeed
+      : opts.contentFeed ? this._storage : null
+  }
   this._writers = checkout ? checkout._writers : []
   this._watching = checkout ? checkout._watching : []
   this._replicating = []
@@ -410,7 +413,7 @@ HyperDB.prototype._writer = function (dir, key, opts) {
   })
 
   var self = this
-  var feed = hypercore(storage, key, opts)
+  var feed = this._factory ? this._factory(key, opts) : hypercore(storage, key, opts)
 
   writer = new Writer(self, feed)
   feed.on('append', onappend)
@@ -916,11 +919,12 @@ Writer.prototype._ensureContentFeed = function (key) {
     key = pair.publicKey
   }
 
-  this._contentFeed = hypercore(storage, key, {
+  var opts = {
     sparse: this._db.sparseContent,
     storeSecretKey: false,
     secretKey
-  })
+  }
+  this._contentFeed = this._factory ? this._factory(key, opts) : hypercore(storage, key, opts)
 
   if (this._db.contentFeeds) this._db.contentFeeds[this._id] = this._contentFeed
   this.emit('content-feed')
