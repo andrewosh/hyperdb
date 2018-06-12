@@ -150,7 +150,7 @@ HyperDB.prototype.put = function (key, val, opts, cb) {
 
   this._lock(function (release) {
     var clock = self._clock()
-    self.heads(function (err, heads) {
+    self._getHeads(false, function (err, heads) {
       if (err) return unlock(err)
       put(self, clock, heads, key, val, opts, unlock)
     })
@@ -175,7 +175,7 @@ HyperDB.prototype.get = function (key, opts, cb) {
 
   var self = this
 
-  this.heads(function (err, heads) {
+  this._getHeads((opts && opts.update) !== false, function (err, heads) {
     if (err) return cb(err)
     get(self, heads, normalizeKey(key), opts, cb)
   })
@@ -226,13 +226,17 @@ HyperDB.prototype.snapshot = function (opts) {
 }
 
 HyperDB.prototype.heads = function (cb) {
-  if (!this.opened) return readyAndHeads(this, cb)
+  this._getHeads(true, cb)
+}
+
+HyperDB.prototype._getHeads = function (update, cb) {
+  if (!this.opened) return readyAndHeads(this, update, cb)
   if (this._heads) return process.nextTick(cb, null, this._heads)
 
   // This is a bit of a hack. Basically when the db is empty
   // we wanna wait for data to come in. TODO: We should guarantee
   // that the db always has a single block of data (like a header)
-  if (this._waitForUpdate()) {
+  if (update && this._waitForUpdate()) {
     this.setMaxListeners(0)
     this.once('remote-update', this.heads.bind(this, cb))
     return
@@ -263,7 +267,7 @@ HyperDB.prototype.heads = function (cb) {
 }
 
 HyperDB.prototype._waitForUpdate = function () {
-  return !this._writers[0].length() && !this.local.length
+  return !this._writers[0].length() && this.local.length < 2
 }
 
 HyperDB.prototype._index = function (key) {
@@ -277,7 +281,7 @@ HyperDB.prototype._index = function (key) {
 HyperDB.prototype.authorized = function (key, cb) {
   var self = this
 
-  this.heads(function (err) {
+  this._getHeads(false, function (err) {
     if (err) return cb(err)
     // writers[0] is the source, always authed
     cb(null, self._writers[0].authorizes(key, null))
@@ -426,6 +430,7 @@ HyperDB.prototype._writer = function (dir, key, opts) {
   return writer
 
   function onwrite (index, data, peer, cb) {
+    if (!index) return cb(null) // do not intercept the header
     if (peer) peer.maxRequests++
     if (index >= writer._writeLength) writer._writeLength = index + 1
     writer._writes.set(index, data)
@@ -1021,10 +1026,10 @@ function checkoutEmpty (db) {
   return db
 }
 
-function readyAndHeads (self, cb) {
+function readyAndHeads (self, update, cb) {
   self.ready(function (err) {
     if (err) return cb(err)
-    self.heads(cb)
+    self._getHeads(update, cb)
   })
 }
 
