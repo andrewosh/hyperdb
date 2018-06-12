@@ -485,7 +485,7 @@ tape('can insert falsy values', function (t) {
         t.same(node && node.value, false)
       })
 
-      var ite = db.iterator()
+      var ite = db.prefixIterator()
       var result = {}
 
       ite.next(function loop (err, node) {
