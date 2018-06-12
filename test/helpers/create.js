@@ -1,14 +1,20 @@
 var hyperdb = require('../../')
 var ram = require('random-access-memory')
+var hypercore = require('hypercore')
 var latency = require('random-access-latency')
 var replicate = require('./replicate')
 var reduce = (a, b) => a
+
+function factory (key, opts) {
+  return hypercore(ram, key, opts)
+}
 
 exports.one = function (key, opts) {
   if (!opts) opts = {}
   var options = Object.assign({
     reduce,
-    valueEncoding: 'utf-8'
+    valueEncoding: 'utf-8',
+    factory: factory
   }, opts)
   var storage = options.latency ? name => latency(options.latency, ram()) : ram
   return hyperdb(storage, key, options)
@@ -47,6 +53,7 @@ function createMany (count, opts, cb) {
   var remaining = count - 1
 
   var options = Object.assign({}, { valueEncoding: 'utf-8' }, opts)
+  options.factory = factory
 
   var first = hyperdb(ram, options)
   first.ready(function (err) {

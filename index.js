@@ -59,12 +59,10 @@ function HyperDB (storage, key, opts) {
 
   this._path = pathBuilder(opts)
   this._factory = opts.factory
-  if (!this._factory) {
-    this._storage = createStorage(storage)
-    this._contentStorage = typeof opts.contentFeed === 'function'
-      ? opts.contentFeed
-      : opts.contentFeed ? this._storage : null
-  }
+  this._storage = createStorage(storage)
+  this._contentStorage = typeof opts.contentFeed === 'function'
+    ? opts.contentFeed
+    : opts.contentFeed ? this._storage : null
   this._writers = checkout ? checkout._writers : []
   this._watching = checkout ? checkout._watching : []
   this._replicating = []
