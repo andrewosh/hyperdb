@@ -4,7 +4,7 @@ var run = require('./helpers/run')
 var hyperdb = require('..')
 var messages = require('../lib/messages')
 
-tape('3 writers, re-open and write, re-open again', function (t) {
+tape.skip('3 writers, re-open and write, re-open again', function (t) {
   create.three(function (a, b, c) {
     var reopened
 

@@ -6,8 +6,6 @@ var toStream = require('nanoiterator/to-stream')
 var varint = require('varint')
 var mutexify = require('mutexify')
 var codecs = require('codecs')
-var raf = require('random-access-file')
-var path = require('path')
 var util = require('util')
 var bulk = require('bulk-write-stream')
 var events = require('events')
@@ -29,8 +27,8 @@ var derive = require('./lib/derive')
 
 module.exports = HyperDB
 
-function HyperDB (storage, key, opts) {
-  if (!(this instanceof HyperDB)) return new HyperDB(storage, key, opts)
+function HyperDB (factory, key, opts) {
+  if (!(this instanceof HyperDB)) return new HyperDB(factory, key, opts)
   events.EventEmitter.call(this)
 
   if (isOptions(key)) {
@@ -43,6 +41,7 @@ function HyperDB (storage, key, opts) {
 
   var checkout = opts.checkout
 
+  this.factory = factory
   this.key = typeof key === 'string' ? Buffer.from(key, 'hex') : key
   this.discoveryKey = this.key ? hypercore.discoveryKey(this.key) : null
   this.source = checkout ? checkout.source : null
@@ -57,12 +56,8 @@ function HyperDB (storage, key, opts) {
   this.id = Buffer.alloc(32)
   sodium.randombytes_buf(this.id)
 
+  this._usingContentFeeds = !!opts.contentFeed
   this._path = pathBuilder(opts)
-  this._factory = opts.factory
-  this._storage = createStorage(storage)
-  this._contentStorage = typeof opts.contentFeed === 'function'
-    ? opts.contentFeed
-    : opts.contentFeed ? this._storage : null
   this._writers = checkout ? checkout._writers : []
   this._watching = checkout ? checkout._watching : []
   this._replicating = []
@@ -216,7 +211,7 @@ HyperDB.prototype.checkout = function (version, opts) {
     version = null
   }
 
-  return new HyperDB(this._storage, this.key, options)
+  return new HyperDB(this.factory, this.key, options)
 }
 
 HyperDB.prototype.snapshot = function (opts) {
@@ -291,9 +286,12 @@ HyperDB.prototype.authorize = function (key, cb) {
 
   var self = this
 
+  console.log('about to call heads')
   this.heads(function (err) { // populates .feeds to be up to date
     if (err) return cb(err)
+    console.log('after heads, calling _addWriter')
     self._addWriter(key, function (err) {
+      console.log('after _addWriter, calling put')
       if (err) return cb(err)
       self.put('', null, cb)
     })
@@ -415,7 +413,7 @@ HyperDB.prototype._writer = function (dir, key, opts) {
   })
 
   var self = this
-  var feed = this._factory ? this._factory(key, opts) : hypercore(storage, key, opts)
+  var feed = this.factory(key, opts)
 
   writer = new Writer(self, feed)
   feed.on('append', onappend)
@@ -463,10 +461,6 @@ HyperDB.prototype._writer = function (dir, key, opts) {
   function addWriter (err) {
     if (!err) self._byKey.set(feed.key.toString('hex'), writer)
   }
-
-  function storage (name) {
-    return self._storage(dir + '/' + name, {feed})
-  }
 }
 
 HyperDB.prototype._getWriter = function (key) {
@@ -475,7 +469,7 @@ HyperDB.prototype._getWriter = function (key) {
 
 HyperDB.prototype._addWriter = function (key, cb) {
   var self = this
-  var writer = this._writer('peers/' + hypercore.discoveryKey(key).toString('hex'), key)
+  var writer = this._writer('peers/' + hypercore.discoveryKey(key).toString('hex'), key, null)
 
   writer._feed.ready(function (err) {
     if (err) return cb(err)
@@ -586,7 +580,7 @@ HyperDB.prototype._ready = function (cb) {
   }
 
   this.source.ready(function (err) {
-    if (err) return done(err)
+    if (err) return cb(err)
     if (self.source.writable) self.local = self.source
     if (!self.local) self.local = feed('local')
 
@@ -595,19 +589,21 @@ HyperDB.prototype._ready = function (cb) {
     self._writers[0].authorize() // source is always authorized
 
     self.local.ready(function (err) {
-      if (err) return done(err)
+      if (err) return cb(err)
 
       self._localWriter = self._writers[self.feeds.indexOf(self.local)]
 
-      if (self._contentStorage) {
+      if (self._usingContentFeeds) {
+        console.log('ENSURING CONTENT FEED')
         self._localWriter._ensureContentFeed(null)
         self.localContent = self._localWriter._contentFeed
       }
 
+      console.log('ABOUT TO CALL HEAD')
       self._localWriter.head(function (err) {
+        console.log('after head')
         if (err) return done(err)
-        if (!self.localContent) return done(null)
-        self.localContent.ready(done)
+        return done(null)
       })
     })
   })
@@ -617,6 +613,7 @@ HyperDB.prototype._ready = function (cb) {
     self._localWriter.ensureHeader(onheader)
 
     function onheader (err) {
+      console.log('after header')
       if (err) return cb(err)
       self.opened = true
       self.emit('ready')
@@ -752,6 +749,7 @@ Writer.prototype.append = function (entry, cb) {
   if (this._needsInflate()) {
     enc = messages.InflatedEntry
     mapped.feeds = this._mapList(this._db.feeds, this._encodeMap, null)
+    console.log('contentFeeds:', this._db.contentFeeds, 'this._id:', this._id)
     if (this._db.contentFeeds) mapped.contentFeed = this._db.contentFeeds[this._id].key
     this._feedsMessage = mapped
     this._feedsLoaded = this._feeds = this._entry
@@ -917,6 +915,7 @@ Writer.prototype._ensureContentFeed = function (key) {
   var secretKey = null
 
   if (!key) {
+    console.log('this._db.local.secretKey:', this._db.local.secretKey)
     var pair = derive(this._db.local.secretKey)
     secretKey = pair.secretKey
     key = pair.publicKey
@@ -927,18 +926,12 @@ Writer.prototype._ensureContentFeed = function (key) {
     storeSecretKey: false,
     secretKey
   }
-  this._contentFeed = this._factory ? this._factory(key, opts) : hypercore(storage, key, opts)
 
-  if (this._db.contentFeeds) this._db.contentFeeds[this._id] = this._contentFeed
-  this.emit('content-feed')
+  var feed = this._db.factory(key, opts)
+  self._contentFeed = feed
 
-  function storage (name) {
-    name = 'content/' + self._feed.discoveryKey.toString('hex') + '/' + name
-    return self._db._contentStorage(name, {
-      metadata: self._feed,
-      feed: self._contentFeed
-    })
-  }
+  if (self._db.contentFeeds) self._db.contentFeeds[self._id] = self._contentFeed
+  self.emit('content-feed')
 }
 
 Writer.prototype._updateFeeds = function () {
@@ -946,6 +939,7 @@ Writer.prototype._updateFeeds = function () {
   var updateReplicates = false
 
   if (this._feedsMessage.contentFeed && this._db.contentFeeds && !this._contentFeed) {
+    // TODO: how should the async behavior be captured?
     this._ensureContentFeed(this._feedsMessage.contentFeed)
     updateReplicates = true
   }
@@ -1041,13 +1035,6 @@ function indexOf (list, ptr) {
 
 function isOptions (opts) {
   return typeof opts === 'object' && !!opts && !Buffer.isBuffer(opts)
-}
-
-function createStorage (st) {
-  if (typeof st === 'function') return st
-  return function (name) {
-    return raf(path.join(st, name))
-  }
 }
 
 function reduceFirst (a, b) {

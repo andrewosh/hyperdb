@@ -4,7 +4,7 @@ var run = require('./helpers/run')
 var hyperdb = require('..')
 var messages = require('../lib/messages')
 
-tape('feed with corrupted inflate generates error', function (t) {
+tape.skip('feed with corrupted inflate generates error', function (t) {
   create.three(function (a, b, c) {
     var corrupted
 
