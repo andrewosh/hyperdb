@@ -286,12 +286,9 @@ HyperDB.prototype.authorize = function (key, cb) {
 
   var self = this
 
-  console.log('about to call heads')
   this.heads(function (err) { // populates .feeds to be up to date
     if (err) return cb(err)
-    console.log('after heads, calling _addWriter')
     self._addWriter(key, function (err) {
-      console.log('after _addWriter, calling put')
       if (err) return cb(err)
       self.put('', null, cb)
     })
@@ -594,14 +591,11 @@ HyperDB.prototype._ready = function (cb) {
       self._localWriter = self._writers[self.feeds.indexOf(self.local)]
 
       if (self._usingContentFeeds) {
-        console.log('ENSURING CONTENT FEED')
         self._localWriter._ensureContentFeed(null)
         self.localContent = self._localWriter._contentFeed
       }
 
-      console.log('ABOUT TO CALL HEAD')
       self._localWriter.head(function (err) {
-        console.log('after head')
         if (err) return done(err)
         return done(null)
       })
@@ -613,7 +607,6 @@ HyperDB.prototype._ready = function (cb) {
     self._localWriter.ensureHeader(onheader)
 
     function onheader (err) {
-      console.log('after header')
       if (err) return cb(err)
       self.opened = true
       self.emit('ready')
@@ -749,7 +742,6 @@ Writer.prototype.append = function (entry, cb) {
   if (this._needsInflate()) {
     enc = messages.InflatedEntry
     mapped.feeds = this._mapList(this._db.feeds, this._encodeMap, null)
-    console.log('contentFeeds:', this._db.contentFeeds, 'this._id:', this._id)
     if (this._db.contentFeeds) mapped.contentFeed = this._db.contentFeeds[this._id].key
     this._feedsMessage = mapped
     this._feedsLoaded = this._feeds = this._entry
@@ -915,7 +907,6 @@ Writer.prototype._ensureContentFeed = function (key) {
   var secretKey = null
 
   if (!key) {
-    console.log('this._db.local.secretKey:', this._db.local.secretKey)
     var pair = derive(this._db.local.secretKey)
     secretKey = pair.secretKey
     key = pair.publicKey
