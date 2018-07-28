@@ -113,6 +113,29 @@ function runIteratorSuite (opts) {
     })
   })
 
+  tape(tag + 'non recursive iteration (special vals)', function (t) {
+    var db = create.one(null, opts)
+
+    var vals = [
+      'META/',
+      'DATA/a',
+      'DATA/b',
+      'INDEX/a',
+      'INDEX/b',
+      'META/'
+    ]
+
+    put(db, vals, function (err) {
+      t.error(err, 'no error')
+      all(db.prefixIterator('INDEX/', {recursive: false}), function (err, map) {
+        t.error(err, 'no error')
+        var keys = Object.keys(map)
+        t.same(keys.sort(), ['INDEX/a', 'INDEX/b'], 'iterated all values')
+        t.end()
+      })
+    })
+  })
+
   tape(tag + 'mixed nested and non nexted iteration', function (t) {
     var db = create.one(null, opts)
     var vals = ['a', 'a/a', 'a/b', 'a/c', 'a/a/a', 'a/a/b', 'a/a/c']

@@ -5,7 +5,6 @@ var run = require('./helpers/run')
 
 tape('authorized writer passes "authorized" api', function (t) {
   create.two(function (a, b) {
-    console.log('CREATED TWO, a:', a)
     a.put('foo', 'bar', function (err) {
       t.error(err)
       a.authorized(a.local.key, function (err, auth) {
